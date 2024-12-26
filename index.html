@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Reader</title>
+    <title>NFC Reader/Writer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -60,9 +60,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>NFC Reader</h1>
-        <p>Tap your NFC tag to read numeric data.</p>
+        <h1>NFC Reader/Writer</h1>
+        <p>Tap your NFC tag to read or write numeric data.</p>
         <button id="start-scan">Start NFC Scan</button>
+        <button id="write-tag">Write Numeric Data to NFC Tag</button>
         <div class="result">
             <p id="nfc-result">Awaiting NFC tag...</p>
         </div>
@@ -76,6 +77,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const startScanButton = document.getElementById("start-scan");
+            const writeTagButton = document.getElementById("write-tag");
             const nfcResult = document.getElementById("nfc-result");
             const alertBox = document.getElementById("alert");
             const logOutput = document.getElementById("log-output");
@@ -88,11 +90,12 @@
                 alertBox.textContent = "NFC is not supported on this device or browser.";
                 alertBox.classList.remove("hidden");
                 startScanButton.disabled = true;
+                writeTagButton.disabled = true;
                 log("NFC not supported.");
                 return;
             }
 
-            startScanButton.addEventListener("click", async () => {
+            async function startNfcScan() {
                 try {
                     const nfcReader = new NDEFReader();
                     await nfcReader.scan();
@@ -150,7 +153,24 @@
                     alertBox.classList.remove("hidden");
                     log(`NFC scanning failed: ${error.message}`);
                 }
-            });
+            }
+
+            async function writeNfcTag() {
+                try {
+                    const nfcWriter = new NDEFReader();
+                    await nfcWriter.write("12345"); // Replace "12345" with any numeric data
+                    nfcResult.textContent = "Numeric data written to NFC tag.";
+                    log("Numeric data written to NFC tag: 12345");
+                } catch (error) {
+                    console.error("Failed to write NFC tag:", error);
+                    alertBox.textContent = "Failed to write NFC tag.";
+                    alertBox.classList.remove("hidden");
+                    log(`Failed to write NFC tag: ${error.message}`);
+                }
+            }
+
+            startScanButton.addEventListener("click", startNfcScan);
+            writeTagButton.addEventListener("click", writeNfcTag);
         });
     </script>
 </body>
