@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Reader App</title>
+    <title>NFC Reader - Numeric Data</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,12 +55,16 @@
             color: red;
             font-weight: bold;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>NFC Reader</h1>
-        <p>Tap your NFC tag to scan.</p>
+        <p>Tap your NFC tag to scan for numeric data.</p>
         <button id="start-scan">Start NFC Scan</button>
         <div class="result">
             <p id="nfc-result">Awaiting NFC tag...</p>
@@ -87,35 +91,40 @@
                 try {
                     const nfcReader = new NDEFReader();
                     await nfcReader.scan();
-                    nfcResult.textContent = "Scan initiated. Tap an NFC tag to read data.";
+                    nfcResult.textContent = "Scan initiated. Tap an NFC tag to read numeric data.";
                     alertBox.textContent = "";
 
                     // Handle the NFC reading event
                     nfcReader.onreading = (event) => {
                         const decoder = new TextDecoder();
-                        let nfcNumber = null;
+                        let numericData = null;
 
-                        // Loop through records to find a number
+                        // Loop through records to find numeric data
                         for (const record of event.message.records) {
                             if (record.recordType === "text") {
-                                nfcNumber = decoder.decode(record.data);
-                                break;
+                                const data = decoder.decode(record.data);
+                                if (/^\d+$/.test(data)) { // Check if the data is purely numeric
+                                    numericData = data;
+                                    break;
+                                }
                             }
                         }
 
-                        if (nfcNumber) {
-                            nfcResult.textContent = `NFC Tag Number: ${nfcNumber}`;
+                        if (numericData) {
+                            nfcResult.textContent = `NFC Tag Number: ${numericData}`;
                         } else {
-                            nfcResult.textContent = "No valid number found on NFC tag.";
+                            nfcResult.textContent = "No valid numeric data found on NFC tag.";
                         }
                     };
 
                     nfcReader.onreadingerror = () => {
                         alertBox.textContent = "NFC reading error. Please try again.";
+                        alertBox.classList.remove("hidden");
                     };
                 } catch (error) {
                     console.error("NFC scanning failed:", error);
-                    alertBox.textContent = "NFC scanning failed. Please ensure your browser supports NFC.";
+                    alertBox.textContent = "NFC scanning failed. Ensure your browser supports NFC.";
+                    alertBox.classList.remove("hidden");
                 }
             });
         });
