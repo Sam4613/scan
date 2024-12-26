@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Reader - Numeric Data</title>
+    <title>NFC Reader Debug</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+            color: #333;
         }
-
         .container {
             text-align: center;
             background: white;
@@ -27,11 +25,9 @@
             width: 90%;
             max-width: 400px;
         }
-
         h1 {
             color: #004aad;
         }
-
         button {
             background-color: #004aad;
             color: white;
@@ -41,35 +37,40 @@
             font-size: 16px;
             cursor: pointer;
         }
-
         button:hover {
             background-color: #003a8c;
         }
-
         .result {
             margin-top: 20px;
             font-size: 18px;
         }
-
         .alert {
             color: red;
             font-weight: bold;
         }
-
-        .hidden {
-            display: none;
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>NFC Reader</h1>
-        <p>Tap your NFC tag to scan for numeric data.</p>
+        <p>Tap your NFC tag to read numeric data.</p>
         <button id="start-scan">Start NFC Scan</button>
         <div class="result">
             <p id="nfc-result">Awaiting NFC tag...</p>
         </div>
         <p id="alert" class="alert hidden"></p>
+        <div id="debug-log">
+            <h3>Debug Log:</h3>
+            <pre id="log-output">No logs yet.</pre>
+        </div>
     </div>
 
     <script>
@@ -77,33 +78,41 @@
             const startScanButton = document.getElementById("start-scan");
             const nfcResult = document.getElementById("nfc-result");
             const alertBox = document.getElementById("alert");
+            const logOutput = document.getElementById("log-output");
 
-            // Check for NFC API support
+            function log(message) {
+                logOutput.textContent += `${new Date().toISOString()}: ${message}\n`;
+            }
+
             if (!("NDEFReader" in window)) {
                 alertBox.textContent = "NFC is not supported on this device or browser.";
                 alertBox.classList.remove("hidden");
                 startScanButton.disabled = true;
+                log("NFC not supported.");
                 return;
             }
 
-            // Start NFC scan
             startScanButton.addEventListener("click", async () => {
                 try {
                     const nfcReader = new NDEFReader();
                     await nfcReader.scan();
-                    nfcResult.textContent = "Scan initiated. Tap an NFC tag to read numeric data.";
+                    nfcResult.textContent = "Scan initiated. Tap an NFC tag.";
                     alertBox.textContent = "";
+                    log("NFC scan started.");
 
-                    // Handle the NFC reading event
                     nfcReader.onreading = (event) => {
                         const decoder = new TextDecoder();
                         let numericData = null;
 
-                        // Loop through records to find numeric data
+                        log(`NFC reading event received.`);
+                        log(`Event: ${JSON.stringify(event.message)}`);
+
                         for (const record of event.message.records) {
+                            log(`Record: ${JSON.stringify(record)}`);
                             if (record.recordType === "text") {
                                 const data = decoder.decode(record.data);
-                                if (/^\d+$/.test(data)) { // Check if the data is purely numeric
+                                log(`Decoded data: ${data}`);
+                                if (/^\d+$/.test(data)) {
                                     numericData = data;
                                     break;
                                 }
@@ -112,19 +121,23 @@
 
                         if (numericData) {
                             nfcResult.textContent = `NFC Tag Number: ${numericData}`;
+                            log(`Valid numeric data found: ${numericData}`);
                         } else {
                             nfcResult.textContent = "No valid numeric data found on NFC tag.";
+                            log("No valid numeric data found.");
                         }
                     };
 
                     nfcReader.onreadingerror = () => {
                         alertBox.textContent = "NFC reading error. Please try again.";
                         alertBox.classList.remove("hidden");
+                        log("NFC reading error.");
                     };
                 } catch (error) {
                     console.error("NFC scanning failed:", error);
                     alertBox.textContent = "NFC scanning failed. Ensure your browser supports NFC.";
                     alertBox.classList.remove("hidden");
+                    log(`NFC scanning failed: ${error.message}`);
                 }
             });
         });
