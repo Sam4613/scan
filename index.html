@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced NFC Reader</title>
+    <title>NFC Reader</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -104,8 +104,7 @@
                         const decoder = new TextDecoder();
                         let numericData = null;
 
-                        log(`NFC reading event received.`);
-                        log(`Event message: ${JSON.stringify(event.message || {})}`);
+                        log("NFC reading event received.");
 
                         if (!event.message || !event.message.records.length) {
                             log("No records found on NFC tag.");
