@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etra for Citizen Abu Dhabi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #004aad;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #004aad;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            background-color: #003a8c;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #alerts {
+            text-align: center;
+            background-color: #ffcccc;
+            color: red;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Etra for Citizen Abu Dhabi</h1>
+
+        <div id="add-passenger-screen">
+            <h2>Add Passenger</h2>
+            <form id="add-passenger-form">
+                <label for="id">ID (Card Scan):</label>
+                <input type="text" id="id" name="id" readonly required>
+                
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+                
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" required>
+                
+                <label for="country">Country:</label>
+                <input type="text" id="country" name="country" required>
+                
+                <label for="contact">Contact Number:</label>
+                <input type="tel" id="contact" name="contact" required>
+                
+                <button type="submit">Add Passenger</button>
+            </form>
+        </div>
+
+        <div id="recharge-screen" class="hidden">
+            <h2>Recharge Card</h2>
+            <p id="user-profile"></p>
+            <h3>Choose Pass:</h3>
+            <select id="recharge-options">
+                <option value="10,50">10 days - 50 AED</option>
+                <option value="15,75">15 days - 75 AED</option>
+                <option value="30,125">30 days (5-day grace) - 125 AED</option>
+                <option value="1,10">24-hour pass - 10 AED</option>
+            </select>
+            <button id="recharge-button">Recharge</button>
+        </div>
+
+        <div id="alerts" class="hidden">
+            <p id="alert-message"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const addPassengerForm = document.getElementById("add-passenger-form");
+            const idInput = document.getElementById("id");
+            const rechargeScreen = document.getElementById("recharge-screen");
+            const userProfile = document.getElementById("user-profile");
+            const rechargeOptions = document.getElementById("recharge-options");
+            const rechargeButton = document.getElementById("recharge-button");
+            const alerts = document.getElementById("alerts");
+            const alertMessage = document.getElementById("alert-message");
+
+            // Simulated database
+            let passengers = [];
+            let currentCard = null;
+
+            // NFC Scan
+            if ('NDEFReader' in window) {
+                const nfc = new NDEFReader();
+                nfc.scan().then(() => {
+                    nfc.onreading = (event) => {
+                        const decoder = new TextDecoder();
+                        for (const record of event.message.records) {
+                            if (record.recordType === "text") {
+                                currentCard = decoder.decode(record.data);
+                                idInput.value = currentCard;
+                                showAlert("Card Scanned Successfully");
+                            }
+                        }
+                    };
+                }).catch((error) => {
+                    console.error("NFC scan failed: ", error);
+                });
+            } else {
+                showAlert("NFC not supported on this device");
+            }
+
+            // Add Passenger
+            addPassengerForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const passenger = {
+                    id: idInput.value,
+                    name: document.getElementById("name").value,
+                    location: document.getElementById("location").value,
+                    country: document.getElementById("country").value,
+                    contact: document.getElementById("contact").value,
+                    daysLeft: 0,
+                    travelHistory: [],
+                };
+                passengers.push(passenger);
+                showAlert("Passenger added successfully!");
+                addPassengerForm.reset();
+            });
+
+            // Recharge
+            rechargeButton.addEventListener("click", () => {
+                if (!currentCard) {
+                    showAlert("No card scanned");
+                    return;
+                }
+                const passenger = passengers.find((p) => p.id === currentCard);
+                if (!passenger) {
+                    showAlert("Card not registered");
+                    return;
+                }
+
+                const [days, cost] = rechargeOptions.value.split(",");
+                passenger.daysLeft += parseInt(days, 10);
+                showAlert(`Card recharged with ${days} days for ${cost} AED`);
+            });
+
+            function showAlert(message) {
+                alertMessage.textContent = message;
+                alerts.classList.remove("hidden");
+                setTimeout(() => alerts.classList.add("hidden"), 3000);
+            }
+        });
+    </script>
+</body>
+</html>
